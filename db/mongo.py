@@ -16,11 +16,11 @@ class SupervisorDao(object):
 
     def setConn(self):
         try:
-            db = pymongo.Connection(self.host, self.port)
+            conn = pymongo.Connection(self.host, self.port)
         except Exception as e:
             raise e
         else:
-            self.cursor = db.monitor
+            self.monitor = conn.monitordb.monitor
 
     def insertCollection(self, dataSet):
-        self.cursor.insert(dataSet)
+        self.monitor.insert(dataSet)
