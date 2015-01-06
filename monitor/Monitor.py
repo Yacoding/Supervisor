@@ -70,9 +70,10 @@ class Compare(object):
             collectorList = [self.yesterday, kafkaCount, 0, 'collector']
             batchList = [self.yesterday, batchCount, 0, 'batch']
             hadoopList = [self.yesterday, hadoopCount, 0, 'hadoop']
-
-        print collectorList
-        self.dao.writeDataMonitor(collectorList)
+            print collectorList
+            print batchList
+            print hadoopList
+            print self.dao.writeDataMonitor(collectorList)
 
 if __name__ == '__main__':
     c = Compare()
