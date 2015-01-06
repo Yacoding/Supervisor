@@ -12,6 +12,8 @@ import datetime
 import socket
 import gzip
 import time
+import urllib
+import urllib2
 from db.mongo import SupervisorDao
 
 
@@ -70,11 +72,51 @@ class Compare(object):
         dataSet['collector'] = kafkaCount
         dataSet['batch'] = batchCount
         dataSet['hadoop'] = hadoopCount
-        print dataSet
         self.dao.insertCollection(dataSet)
 
+
+class Query():
+
+    def __init__(self):
+        pass
+
+    def convert2timestamp(self):
+        c = Compare()
+        self.start, self.end = c.getDate()
+        self.unix_start, self.unix_end = datetime_timestamp(self.start), datetime_timestamp(self.end)
+        self.dao = SupervisorDao('10.1.5.60', 27017)
+
+
+    def getHttpData(self, ip, param):
+        self.convert2timestamp()
+        report_param = param % (self.unix_start, self.unix_end)
+        print report_param
+        url = 'http://{0}:18080/report/report?'.format(ip)
+        encodeParam = urllib.urlencode({'report_param':report_param})
+        rsp = urllib2.urlopen(url, encodeParam).read()
+        return rsp
+
+    def getDateTime(self, dayOffset = 0):
+        now = datetime.datetime.today()
+        OffsetDateTime = now + datetime.timedelta(days = dayOffset)
+        return OffsetDateTime.strftime('%Y-%m-%dT%H').split('T')[0]
+
+    def write2DB(self):
+        start,end = self.getDateTime(-1), self.getDateTime()
+        repeatConv = self.getHttpData('10.1.15.15', '{"settings":{"time":{"start":%d,"end":%d,"timezone":0},"report_id":"1321231321","data_source":"ymds_druid_datasource","pagination":{"size":1000000,"page":0}},"group":["transaction_id","day"],"data":["conversion2","conversion"],"filters":{"$and":{"datasource":{"$eq":"hasoffer"},"log_tye":{"$eq":1},"conversion":{"$gt":1}}},"sort":[]}')
+        druidTotal = self.getHttpData('10.1.15.15', '{"settings":{"time":{"start":%d,"end":%d,"timezone":0},"report_id":"1321231321","data_source":"ymds_druid_datasource","pagination":{"size":1000000,"page":0}},"group":[],"data":["click","conversion"],"filters":{"$and":{}},"sort":[]}')
+        hourData = self.getHttpData('10.1.15.15', '{"settings":{"time":{"start":%d,"end":%d,"timezone":0},"report_id":"1321231321","data_source":"ymds_druid_datasource","pagination":{"size":1000000,"page":0}},"group":["day","hour"],"data":["click","conversion"],"filters":{"$and":{}},"sort":[]}')
+        TdData = self.getHttpData('10.1.15.16', '{"settings":{"time":{"start":%d,"end":%d,"timezone":0},"report_id":"1321231321","data_source":"contrack_druid_datasource_ds","pagination":{"size":1000000,"page":0}},"group":[],"data":["clicks","convs"],"filters":{"$and":{}},"sort":[]}')
+        dataSet = dict()
+        dataSet['repeatConv'] = repeatConv
+        dataSet['druidTotal'] = druidTotal
+        dataSet['hourData'] = hourData
+        dataSet['TdData'] = TdData
+        self.dao.insertCollection(dataSet)
 
 if __name__ == '__main__':
     c = Compare()
     c.write2DB()
+    q = Query()
+    q.write2DB()
 
