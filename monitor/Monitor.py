@@ -4,16 +4,10 @@
 
 __author__ = 'jeff'
 
-"""
-Kafka Data Log
-Batch File
-Hadoop File
-Hive Record
-Impala Record
-"""
+import sys
+sys.path.append('/home/dev/yufeng/Supervisor')
 
 import os
-import sys
 import datetime
 import socket
 import gzip
@@ -21,7 +15,7 @@ import time
 from db.mysql import SupervisorDao
 
 
-sys.path.append('/home/dev/yufeng/Supervisor')
+
 
 def get_ip_address(ifname = 'eth0'):
     return socket.gethostbyname(socket.gethostname())
