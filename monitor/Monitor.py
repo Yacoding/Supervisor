@@ -17,13 +17,11 @@ from db.mongo import SupervisorDao
 
 
 def get_ip_address():
-    return socket.gethostbyname(socket.gethostname())
+    return socket.gethostbyname(socket.gethostname()).replace('.', '-')
 
 def datetime_timestamp(dt):
      s = time.mktime(time.strptime(dt, '%Y-%m-%d'))
      return int(s)
-
-
 
 class Compare(object):
 
