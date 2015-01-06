@@ -12,7 +12,7 @@ import datetime
 import socket
 import gzip
 import time
-from db.mysql import SupervisorDao
+from db.mongo import SupervisorDao
 
 
 
@@ -34,7 +34,7 @@ class Compare(object):
             self.yesterday = yesterday
             self.today = today
         self.localip = get_ip_address()
-        self.dao = SupervisorDao('10.1.5.60', 'monitor', 'monitor', 'monitordb')
+        self.dao = SupervisorDao('10.1.5.60', 27017)
 
     def getDate(self):
         today = datetime.datetime.now()
@@ -66,14 +66,15 @@ class Compare(object):
             for data in fobj:
                 hadoopCount += 1
 
-        if self.localip.endswith('12'):
-            collectorList = [self.yesterday, kafkaCount, 0, 'collector']
-            batchList = [self.yesterday, batchCount, 0, 'batch']
-            hadoopList = [self.yesterday, hadoopCount, 0, 'hadoop']
-            print collectorList
-            print batchList
-            print hadoopList
-            print self.dao.writeDataMonitor(collectorList)
+        dataSet = dict()
+        dataSet['datetime'] = self.yesterday
+        dataSet['ip'] = self.localip
+        dataSet['collector'] = kafkaCount
+        dataSet['batch'] = batchCount
+        dataSet['hadoop'] = hadoopCount
+        print dataSet
+        self.dao.insertCollection(dataSet)
+
 
 if __name__ == '__main__':
     c = Compare()
