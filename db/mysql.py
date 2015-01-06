@@ -29,12 +29,12 @@ class SupervisorDao(object):
             self.cursor = conn.cursor()
 
     def writeDataMonitor(self, dataList):
-        sql = 'insert into datamonitor values(%s, %s, %s, %s)'
+        sql = 'insert into datamonitor(datetime, node12, node13, monitortype) values(%s, %s, %s, %s)'
         n = self.cursor.execute(sql, dataList)
         return n
 
 
     def writeQueryMonitor(self, dataList):
-        sql = 'insert into querymonitor values(%s, %s, %s)'
+        sql = 'insert into querymonitor(datetime, total, querytype) values(%s, %s, %s)'
         n = self.cursor.execute(sql, dataList)
         return n
