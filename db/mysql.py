@@ -14,6 +14,7 @@ class SupervisorDao(object):
         self.user = user
         self.password = password
         self.db = db
+        self.setConn()
 
     def setConn(self):
         try:

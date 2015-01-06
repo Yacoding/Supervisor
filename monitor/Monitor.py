@@ -16,8 +16,7 @@ from db.mysql import SupervisorDao
 
 
 
-
-def get_ip_address(ifname = 'eth0'):
+def get_ip_address():
     return socket.gethostbyname(socket.gethostname())
 
 def datetime_timestamp(dt):
