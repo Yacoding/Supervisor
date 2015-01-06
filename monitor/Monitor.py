@@ -34,7 +34,7 @@ class Compare(object):
             self.yesterday = yesterday
             self.today = today
         self.localip = get_ip_address()
-        self.dao = SupervisorDao('10.1.5.60', 'root', 'root', 'monitordb')
+        self.dao = SupervisorDao('10.1.5.60', 'monitor', 'monitor', 'monitordb')
 
     def getDate(self):
         today = datetime.datetime.now()
