@@ -18,7 +18,7 @@ class SupervisorDao(object):
 
     def setConn(self):
         try:
-            conn = MySQLdb.connect(host = self.host,
+            self.conn = MySQLdb.connect(host = self.host,
                                    user = self.user,
                                    passwd = self.password,
                                    db = self.db,
@@ -26,15 +26,17 @@ class SupervisorDao(object):
         except Exception as e:
             raise e
         else:
-            self.cursor = conn.cursor()
+            self.cursor = self.conn.cursor()
 
     def writeDataMonitor(self, dataList):
         sql = 'insert into datamonitor(datetime, node12, node13, monitortype) values(%s, %s, %s, %s)'
         n = self.cursor.execute(sql, dataList)
+        self.conn.close()
         return n
 
 
     def writeQueryMonitor(self, dataList):
         sql = 'insert into querymonitor(datetime, total, querytype) values(%s, %s, %s)'
         n = self.cursor.execute(sql, dataList)
+        self.conn.close()
         return n
