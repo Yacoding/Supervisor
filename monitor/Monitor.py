@@ -13,15 +13,15 @@ Impala Record
 """
 
 import os
+import sys
 import datetime
 import socket
 import gzip
 import time
-import urllib2
-import urllib
 from db.mysql import SupervisorDao
 
 
+sys.path.append('/home/dev/yufeng/Supervisor')
 
 def get_ip_address(ifname = 'eth0'):
     return socket.gethostbyname(socket.gethostname())
