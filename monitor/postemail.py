@@ -3,8 +3,14 @@
 
 import pymongo
 import json
+import datetime
 import smtplib,email,sys
 from email.mime.text import MIMEText
+
+
+def getDate():
+	t = datetime.datetime.today()
+	return t.strftime('%Y-%m-%d')
 
 
 def getdbdata():
@@ -17,7 +23,7 @@ def getdbdata():
 
 
     find = cursor.find()
-    day, collector_12, collector_13, total_collector, batch_12, batch_13, total_batch, hadoop_12, hadoop_13, total_hadoop, ymtotal, repeatConv, tdtotal = 13 * [0]
+    day, collector_12, collector_13, total_collector, batch_12, batch_13, total_batch, hadoop_12, hadoop_13, total_hadoop, ymtotal, hasofferRepeatConv, yeahmobiRepeatConv, tdtotal = 14 * [0]
     missHour = ''
     for data in find:
         del data['_id']
@@ -32,9 +38,20 @@ def getdbdata():
             hadoop_12 = data.get('hadoop')
         if 'druidTotal' in data:
             ymtemp = json.loads(data.get('druidTotal')).get('data').get('data')[1]
-            ymtotal = '{0} {1}'.format(ymtemp[0], ymtemp[1])
-        if 'repeatConv' in data:
-            repeatConv = len(json.loads(data.get('repeatConv')).get('data').get('data')) - 1
+            if ymtemp[0] > ymtemp[1]:
+                ymtotal = '{0} {1}'.format(ymtemp[0], ymtemp[1])
+            else:
+                ymtotal = '{0} {1}'.format(ymtemp[1], ymtemp[0])
+        if 'hasofferRepeatConv' in data:
+            try:
+                hasofferRepeatConv = len(json.loads(data.get('hasofferRepeatConv')).get('data').get('data')) - 1
+            except ValueError as e:
+                raise e
+        if 'yeahmobiRepeatConv' in data:
+            try:
+                yeahmobiRepeatConv = len(json.loads(data.get('yeahmobiRepeatConv')).get('data').get('data')) - 1
+            except ValueError as e:
+                raise e
         if 'TdData' in data:
             tdtemp = json.loads(data.get('TdData')).get('data').get('data')[1]
             tdtotal = '{0} {1}'.format(tdtemp[0], tdtemp[1])
@@ -48,10 +65,11 @@ def getdbdata():
     total_batch = batch_12 + batch_13
     total_hadoop = hadoop_12 + hadoop_13
     cursor.remove()
-    return day, collector_12, collector_13, total_collector, batch_12, batch_13, total_batch, hadoop_12, hadoop_13, total_hadoop, ymtotal, repeatConv, tdtotal, missHour
+    return day, collector_12, collector_13, total_collector, batch_12, batch_13, total_batch, hadoop_12, hadoop_13, total_hadoop, ymtotal, hasofferRepeatConv, yeahmobiRepeatConv, tdtotal, missHour
+
 
 def getHtmlContent():
-    dataSet = dict(zip(["day","collector_12","collector_13","total_collector","batch_12","batch_13","total_batch","hadoop_12","hadoop_13","total_hadoop","ymtotal","repeatConv","tdtotal","missHour"],
+    dataSet = dict(zip(["day","collector_12","collector_13","total_collector","batch_12","batch_13","total_batch","hadoop_12","hadoop_13","total_hadoop","ymtotal","hasofferRepeatConv","yeahmobiRepeatConv","tdtotal","missHour"],
                        getdbdata()))
     html_template = """
 <!DOCTYPE html>
@@ -64,9 +82,9 @@ def getHtmlContent():
     <table border="1">
         <tr>
             <td>{0}</td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td>10.1.15.12</td>
+            <td>10.1.15.13</td>
+            <td>总量</td>
         </tr>
         <tr>
             <td>采集器</td>
@@ -93,20 +111,26 @@ def getHtmlContent():
             <td></td>
         </tr>
         <tr>
-            <td>HASOFFER重复转化</td>
+            <td>Hasoffer重复转化</td>
             <td>{11}</td>
             <td></td>
             <td></td>
         </tr>
         <tr>
-            <td>EVE点击转化总量</td>
+            <td>Yeahmobi重复转化</td>
             <td>{12}</td>
             <td></td>
             <td></td>
         </tr>
         <tr>
-            <td>按小时查询DRUID是否有点击或者转化为0</td>
+            <td>EVE点击转化总量</td>
             <td>{13}</td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>按小时查询DRUID是否有点击或者转化为0</td>
+            <td>{14}</td>
             <td></td>
             <td></td>
         </tr>
@@ -125,7 +149,8 @@ def getHtmlContent():
                                 dataSet.get('hadoop_13'),
                                 dataSet.get('total_hadoop'),
                                 dataSet.get('ymtotal'),
-                                dataSet.get('repeatConv'),
+                                dataSet.get('hasofferRepeatConv'),
+                                dataSet.get('yeahmobiRepeatConv'),
                                 dataSet.get('tdtotal'),
                                 dataSet.get('missHour'))
 
@@ -141,18 +166,19 @@ def connect():
     return server
 
 def sendmessage(server,to,subj,content):
-    msg = MIMEText(content, _subtype='html', _charset='gb2312')
+    msg = MIMEText(content, _subtype='html', _charset='utf-8')
     msg['Subject'] = subj
+    msg['To'] = ','.join(to)
     try:
         failed = server.sendmail(smtpuser,to,msg.as_string())   # may also raise exc
     except Exception as ex:
         print 'Error - send failed'
     else:
-        print 'send success'
+        print '{0}: send success'.format(getDate())
 
 if __name__=="__main__":
-    to='jeff.yu@ndpmedia.com'
-    subj='每日统计'
+    toList = ['bigdata@ndpmedia.com','robin.hu@ndpmedia.com', 'jeff.yu@ndpmedia.com', 'hardy.tan@ndpmedia.com']
+    subj='每日统计_{0}'.format(getDate())
     text = getHtmlContent()
     server=connect()
-    sendmessage(server,to,subj,text)
+    sendmessage(server,toList,subj,text)
