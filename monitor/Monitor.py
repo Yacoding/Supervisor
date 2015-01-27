@@ -4,14 +4,15 @@
 
 __author__ = 'jeff'
 
-import os
 import sys
-sys.path.append(os.path.split(os.path.split(__file__)[0])[0])
+sys.path.append('/home/dev/yufeng/Supervisor')
 
+import os
 import datetime
 import socket
 import gzip
 import time
+import requests
 import urllib
 import urllib2
 from db.mongo import SupervisorDao
@@ -90,10 +91,12 @@ class Query():
     def getHttpData(self, ip, param):
         self.convert2timestamp()
         report_param = param % (self.unix_start, self.unix_end)
-        url = 'http://{0}:18080/report/report?'.format(ip)
-        encodeParam = urllib.urlencode({'report_param':report_param})
-        rsp = urllib2.urlopen(url, encodeParam).read()
-        return rsp
+        url = 'http://{0}:18080/report/report?report_param={1}'.format(ip, report_param)
+        r = requests.get(url)
+        if r.status_code == 200:
+            return r.text
+        else:
+            return None
 
     def getDateTime(self, dayOffset = 0):
         now = datetime.datetime.today()
@@ -104,12 +107,15 @@ class Query():
         start,end = self.getDateTime(-1), self.getDateTime()
         hasofferRepeatConv = self.getHttpData('10.1.15.15', '{"settings":{"time":{"start":%d,"end":%d,"timezone":0},"report_id":"1321231321","data_source":"ymds_druid_datasource","pagination":{"size":1000000,"page":0}},"group":["transaction_id","day"],"data":["conversion2","conversion"],"filters":{"$and":{"datasource":{"$eq":"hasoffer"},"log_tye":{"$eq":1},"conversion":{"$gt":1}}},"sort":[]}')
         yeahmobiRepeatConv = self.getHttpData('10.1.15.15', '{"settings":{"time":{"start":%d,"end":%d,"timezone":0},"report_id":"1321231321","data_source":"ymds_druid_datasource","pagination":{"size":1000000,"page":0}},"group":["transaction_id","day"],"data":["click","conversion"],"filters":{"$and":{"datasource":{"$neq":"hasoffer"},"status":{"$eq":"Confirmed"},"log_tye":{"$eq":1},"conversion":{"$gt":1}}},"sort":[]}')
+        hasredundantConv = self.getHttpData('10.1.15.15', '{"settings":{"time":{"start":%d,"end":%d,"timezone":0},"data_source":"ymds_druid_datasource","report_id":"convesionLogQuery","pagination":{"size":50,"page":0}},"data":["conversion"],"group":["status"],"filters":{"$and":{"log_tye":{"$eq":"1"},"status":{"$neq":"Confirmed"}}}}')
         druidTotal = self.getHttpData('10.1.15.15', '{"settings":{"time":{"start":%d,"end":%d,"timezone":0},"report_id":"1321231321","data_source":"ymds_druid_datasource","pagination":{"size":1000000,"page":0}},"group":[],"data":["click","conversion"],"filters":{"$and":{}},"sort":[]}')
         hourData = self.getHttpData('10.1.15.15', '{"settings":{"time":{"start":%d,"end":%d,"timezone":0},"report_id":"1321231321","data_source":"ymds_druid_datasource","pagination":{"size":1000000,"page":0}},"group":["day","hour"],"data":["click","conversion"],"filters":{"$and":{}},"sort":[]}')
         TdData = self.getHttpData('10.1.15.29', '{"settings":{"time":{"start":%d,"end":%d,"timezone":0},"report_id":"1321231321","data_source":"eve_druid_datasource_ds","pagination":{"size":1000000,"page":0}},"group":[],"data":["clicks","convs"],"filters":{"$and":{}},"sort":[]}')
+        print yeahmobiRepeatConv
         dataSet = dict()
         dataSet['hasofferRepeatConv'] = hasofferRepeatConv
         dataSet['yeahmobiRepeatConv'] = yeahmobiRepeatConv
+        dataSet['hasredundantConv'] = hasredundantConv
         dataSet['druidTotal'] = druidTotal
         dataSet['hourData'] = hourData
         dataSet['TdData'] = TdData
@@ -120,4 +126,3 @@ if __name__ == '__main__':
     c.write2DB()
     q = Query()
     q.write2DB()
-
